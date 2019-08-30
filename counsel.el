@@ -5574,6 +5574,10 @@ list is passed to `compilation-environment'."
   "Regexp for matching the names of Makefiles."
   :type 'regexp)
 
+(defcustom counsel-compile-show-build-env t
+  "Whether to show the build environment for each command."
+  :type 'boolean)
+
 (defcustom counsel-compile-build-directories
   '("build" "builds" "bld" ".build")
   "List of potential build subdirectory names to check for."
@@ -5631,7 +5635,9 @@ The resulting strings are tagged with properties that
                          'font-lock-variable-name-face)))
         (props `(srcdir ,srcdir blddir ,blddir bldenv ,counsel-compile-env)))
     (mapcar (lambda (target)
-              (setq target (concat (format fmt target) suffix build-env))
+              (setq target (if counsel-compile-show-build-env
+                               (concat (format fmt target) suffix build-env)
+                             (format fmt target)))
               (add-text-properties 0 (length target) props target)
               target)
             (counsel-compile--probe-make-targets (or blddir srcdir)))))
