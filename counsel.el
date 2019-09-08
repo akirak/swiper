@@ -5542,7 +5542,8 @@ Use the presence of a `dir-locals-file' to determine the root."
 (defvar counsel-compile-local-builds
   '(counsel-compile-get-filtered-history
     counsel-compile-get-build-directories
-    counsel-compile-get-make-invocation)
+    counsel-compile-get-make-invocation
+    counsel-compile-get-npm-commands)
   "Additional compile invocations to feed into `counsel-compile'.
 
 This can either be a list of compile invocation strings or
@@ -5650,6 +5651,12 @@ sub-directories that builds may be invoked in."
   (let ((srcdir (counsel--compile-root)))
     (when (directory-files (or blddir srcdir) nil
                            counsel-compile-make-pattern t)
+      (counsel--compile-get-make-targets srcdir blddir))))
+
+(defun counsel-compile-get-npm-commands (&optional blddir)
+  (let ((srcdir (counsel--compile-root)))
+    (when (directory-files (or blddir srcdir) nil
+                           (rx bol "package.json" eol) t)
       (counsel--compile-get-make-targets srcdir blddir))))
 
 (defun counsel--find-build-subdir (srcdir)
