@@ -5543,7 +5543,8 @@ This variable is suitable for addition to
 `savehist-additional-variables'.")
 
 (defvar counsel-compile-root-functions
-  '(counsel--project-current
+  '(counsel--npm-package-root
+    counsel--project-current
     counsel--configure-root
     counsel--git-root
     counsel--dir-locals-root)
@@ -5579,9 +5580,14 @@ Use the presence of a \".git\" file to determine the root."
 Use the presence of a `dir-locals-file' to determine the root."
   (counsel--dominating-file dir-locals-file))
 
+(defun counsel--npm-package-root ()
+  "Return a directory containing package.json or nil."
+  (counsel--dominating-file "package.json"))
+
 (defvar counsel-compile-local-builds
   '(counsel-compile-get-filtered-history
     counsel-compile-get-build-directories
+    counsel-compile-get-npm-invocation
     counsel-compile-get-make-invocation)
   "Additional compile invocations to feed into `counsel-compile'.
 
@@ -5685,6 +5691,30 @@ sub-directories that builds may be invoked in."
     (when (directory-files (or blddir srcdir) nil
                            counsel-compile-make-pattern t)
       (counsel--compile-get-make-targets srcdir blddir))))
+
+(defun counsel--compile-get-npm-scripts (srcdir)
+  "Return a list of npm script commands."
+  (let* ((file (expand-file-name "package.json" srcdir))
+         (root-object (json-read-file file))
+         (fmt (propertize "npm run %s" 'cmd t)))
+    (mapcar (lambda (pair)
+              (let ((name (car pair))
+                    (command (cdr pair)))
+                (setq target (format fmt name))
+                (add-text-properties 0 (length target)
+                                     `(srcdir ,srcdir bldenv ,command)
+                                     target)
+                target))
+            (alist-get 'scripts root-object))))
+
+(defun counsel-compile-get-npm-invocation (&optional dir)
+  "Have a look in the root directory for npm packages.
+
+Optionally, you can specify DIR that contains package.json of
+your concern."
+  (let ((srcdir (or dir (counsel--compile-root))))
+    (when (directory-files srcdir nil (regexp-quote "package.json") t)
+      (counsel--compile-get-npm-scripts srcdir))))
 
 (defun counsel--find-build-subdir (srcdir)
   "Return builds subdirectory of SRCDIR, if one exists."
